@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fff;
+    --foreground: #000;
+
+    --card: #bcc9ff;
+    --card-foreground: 0 0 0;
+
+    --popover:#bcc9ff;
+    --popover-foreground: 0 0 0;
+
+    --primary: 37 99 235;
+    --primary-foreground: #bcc9ff;
+
+    --secondary: 241 245 249;
+    --secondary-foreground: 0 0 0;
+
+    --muted: 248 250 252;
+    --muted-foreground: 100 116 139;
+
+    --accent: 219 234 254;
+    --accent-foreground: 30 58 138;
+
+    --destructive: 239 68 68;
+    --destructive-foreground:#bcc9ff;
+
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 37 99 235;
+
+    --success: 34 197 94;
+    --warning: 245 158 11;
+    --info: 59 130 246;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: #2e53e6;
+    --sidebar-foreground: 0 0 0;
+    --sidebar-primary: 37 99 235;
+    --sidebar-primary-foreground: #173fdf;
+    --sidebar-accent: 241 245 249;
+    --sidebar-accent-foreground: 0 0 0;
+    --sidebar-border: 226 232 240;
+    --sidebar-ring: 37 99 235;
+
+    --chart-blue: 37 99 235;
+    --chart-blue-light: 147 197 253;
+    --chart-green: 34 197 94;
+    --chart-green-light: 134 239 172;
+    --chart-orange: 245 158 11;
+    --chart-orange-light: 253 186 116;
+    --chart-purple: 147 51 234;
+    --chart-purple-light: 196 181 253;
+    --chart-red: 239 68 68;
+    --chart-red-light: 252 165 165;
+  }
+
+  .dark {
+    --background: 15 23 42;
+    --foreground: 248 250 252;
+    --card: 30 41 59;
+    --card-foreground: 248 250 252;
+    --popover: 30 41 59;
+    --popover-foreground: 248 250 252;
+    --primary: 59 130 246;
+    --primary-foreground: 15 23 42;
+    --secondary: 51 65 85;
+    --secondary-foreground: 226 232 240;
+    --muted: 51 65 85;
+    --muted-foreground: 148 163 184;
+    --accent: 30 58 138;
+    --accent-foreground: 248 250 252;
+    --destructive: 220 38 38;
+    --destructive-foreground: 248 250 252;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 59 130 246;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  .metric-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+  
+  .kpi-positive {
+    @apply text-green-700 bg-green-50 border-green-200;
+  }
+  
+  .kpi-negative {
+    @apply text-red-700 bg-red-50 border-red-200;
+  }
+  
+  .kpi-neutral {
+    @apply text-blue-700 bg-blue-50 border-blue-200;
+  }
+
+  .status-operational {
+    @apply text-green-700 bg-green-50 border-green-200;
+  }
+
+  .status-warning {
+    @apply text-amber-700 bg-amber-50 border-amber-200;
+  }
+
+  .status-critical {
+    @apply text-red-700 bg-red-50 border-red-200;
+  }
+
+  .status-maintenance {
+    @apply text-blue-700 bg-blue-50 border-blue-200;
+  }
+
+  .rpn-high {
+    @apply text-red-700 bg-red-50 border-red-200;
+  }
+
+  .rpn-medium {
+    @apply text-amber-700 bg-amber-50 border-amber-200;
+  }
+
+  .rpn-low {
+    @apply text-green-700 bg-green-50 border-green-200;
+  }
+}
