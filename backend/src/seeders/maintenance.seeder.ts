@@ -1,6 +1,4 @@
-import { AppDataSource } from '../config/database';
-import { MaintenanceRecord } from '../entities/maintenance.entity';
-import { Asset } from '../entities/asset.entity';
+import { prisma } from '../config/database';
 
 const maintenances = [
   {
@@ -46,31 +44,25 @@ const maintenances = [
 
 export const seedMaintenances = async () => {
   try {
-    const dataSource = await AppDataSource.initialize();
-    const maintenanceRepository = dataSource.getRepository(MaintenanceRecord);
-    const assetRepository = dataSource.getRepository(Asset);
-
-    // Clear existing data
-    await maintenanceRepository.clear();
-
-    // Get all assets
-    const assets = await assetRepository.find();
-
-    // Insert new data
-    for (const maintenance of maintenances) {
-      // Assign a random asset to each maintenance
-      const randomAsset = assets[Math.floor(Math.random() * assets.length)];
-      
-      const newMaintenance = maintenanceRepository.create({
-        ...maintenance,
-        assetId: randomAsset.id
-      });
-      
-      await maintenanceRepository.save(newMaintenance);
+    console.log('🌱 Seeding maintenances...');
+    
+    // Get the first asset to associate with maintenances
+    const asset = await prisma.asset.findFirst();
+    
+    if (!asset) {
+      throw new Error('No assets found to associate with maintenances');
     }
 
+    for (const maintenance of maintenances) {
+      await prisma.maintenanceRecord.create({
+        data: {
+          ...maintenance,
+          assetId: asset.id
+        }
+      });
+    }
+    
     console.log('✅ Maintenances seeded successfully');
-    await dataSource.destroy();
   } catch (error) {
     console.error('❌ Error seeding maintenances:', error);
     throw error;

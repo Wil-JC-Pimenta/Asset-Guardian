@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,43 +8,43 @@ datasource db {
 }
 
 model Asset {
-  id                String            @id @default(uuid())
-  code              String            @unique
-  name              String
-  manufacturer      String
-  model             String
-  type              String
-  location          String
-  acquisitionDate   DateTime
-  estimatedLife     Int               // em meses
-  cost              Float
-  serialNumber      String            @unique
-  status            String
-  lastMaintenance   DateTime?
-  nextMaintenance   DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  maintenance       MaintenanceRecord[]
-  fmeaRecords       FMEARecord[]
+  id              String              @id @default(uuid())
+  code            String              @unique
+  name            String
+  manufacturer    String
+  model           String
+  type            String
+  location        String
+  acquisitionDate DateTime
+  estimatedLife   Int
+  cost            Float
+  serialNumber    String              @unique
+  status          String
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  fmeaRecords     FMEARecord[]
+  maintenance     MaintenanceRecord[]
 }
 
 model MaintenanceRecord {
-  id              String   @id @default(uuid())
-  assetId         String
-  asset           Asset    @relation(fields: [assetId], references: [id])
-  type            String   // preventiva, corretiva, preditiva, emergencial
-  description     String
-  cost            Float
-  date            DateTime
-  status          String   // agendada, em_andamento, concluida, cancelada
-  responsible     String
-  deadline        DateTime
-  materials       String   // JSON string com lista de materiais
-  failureDetails  String?  // detalhes da falha encontrada
-  solution        String?  // solução aplicada
-  attachments     String?  // JSON string com URLs dos anexos
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  assetId        String
+  type           String
+  description    String
+  cost           Float
+  date           DateTime
+  status         String
+  responsible    String
+  deadline       DateTime
+  materials      String
+  failureDetails String?
+  solution       String?
+  attachments    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  asset          Asset    @relation(fields: [assetId], references: [id])
 }
 
 model Material {
@@ -66,14 +63,14 @@ model Material {
 }
 
 model Technician {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  phone       String?
-  specialty   String
-  status      String   // ativo, inativo, em_ferias
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  specialty String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FMEARecord {
@@ -93,4 +90,4 @@ model FMEARecord {
   asset       Asset    @relation(fields: [assetId], references: [id])
 
   @@index([assetId])
-} 
+}

@@ -71,15 +71,15 @@ const Dashboard: React.FC = () => {
 
       const dashboardData: DashboardData = {
         totalAssets: assets.length,
-        operationalAssets: assets.filter((a) => a.status === 'Operacional').length,
-        maintenanceAssets: assets.filter((a) => a.status === 'Manutenção').length,
+        operationalAssets: assets.filter((a) => a.status === 'ativo').length,
+        maintenanceAssets: assets.filter((a) => a.status === 'em_manutencao').length,
         totalMaintenanceCost: maintenanceRecords.reduce((sum, record) => sum + (record.cost || 0), 0),
         upcomingMaintenance: maintenanceRecords
-          .filter((record) => new Date(record.scheduledDate) > new Date())
-          .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
+          .filter((record) => new Date(record.deadline) > new Date())
+          .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
           .slice(0, 5),
         recentMaintenance: maintenanceRecords
-          .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .slice(0, 5),
         assetsByType: Object.entries(
           assets.reduce((acc: { [key: string]: number }, asset) => {
@@ -245,7 +245,7 @@ const Dashboard: React.FC = () => {
                     <TableRow key={record.id}>
                       <TableCell>{record.asset.name}</TableCell>
                       <TableCell>
-                        {format(new Date(record.scheduledDate), 'dd/MM/yyyy', { locale: ptBR })}
+                        {format(new Date(record.deadline), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell>{record.type}</TableCell>
                       <TableCell>{record.status}</TableCell>
@@ -276,7 +276,7 @@ const Dashboard: React.FC = () => {
                     <TableRow key={record.id}>
                       <TableCell>{record.asset.name}</TableCell>
                       <TableCell>
-                        {format(new Date(record.scheduledDate), 'dd/MM/yyyy', { locale: ptBR })}
+                        {format(new Date(record.date), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell>{record.type}</TableCell>
                       <TableCell>{record.status}</TableCell>

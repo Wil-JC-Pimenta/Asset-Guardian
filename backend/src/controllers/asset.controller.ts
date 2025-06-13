@@ -75,13 +75,53 @@ export const getAssetById = async (req: Request, res: Response) => {
 
 export const createAsset = async (req: Request, res: Response) => {
   try {
+    // Validate required fields
+    const requiredFields = ['code', 'name', 'manufacturer', 'model', 'type', 'location', 'acquisitionDate', 'estimatedLife', 'cost', 'serialNumber', 'status'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        fields: missingFields
+      });
+    }
+
+    // Validate unique fields
+    const existingAsset = await prisma.asset.findFirst({
+      where: {
+        OR: [
+          { code: req.body.code },
+          { serialNumber: req.body.serialNumber }
+        ]
+      }
+    });
+
+    if (existingAsset) {
+      return res.status(400).json({
+        error: 'Asset with this code or serial number already exists',
+        existingAsset
+      });
+    }
+
     const asset = await prisma.asset.create({
-      data: req.body,
+      data: {
+        ...req.body,
+        acquisitionDate: new Date(req.body.acquisitionDate),
+        lastMaintenance: req.body.lastMaintenance ? new Date(req.body.lastMaintenance) : null,
+        nextMaintenance: req.body.nextMaintenance ? new Date(req.body.nextMaintenance) : null,
+      },
     });
     res.status(201).json(asset);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating asset:', error);
-    res.status(500).json({ error: 'Failed to create asset' });
+    if (error.code === 'P2002') {
+      res.status(400).json({ error: 'Unique constraint violation. Code or serial number already exists.' });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to create asset',
+        details: error.message
+      });
+    }
   }
 };
 

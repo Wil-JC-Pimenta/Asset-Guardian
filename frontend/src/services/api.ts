@@ -17,16 +17,15 @@ export interface Asset {
   id: string;
   code: string;
   name: string;
+  manufacturer: string;
+  model: string;
   type: string;
-  status: 'Operacional' | 'Manutenção' | 'Atenção' | 'Inativo';
   location: string;
-  purchaseDate: string;
-  purchasePrice: number;
-  description?: string;
-  tag?: string;
-  criticality?: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
-  mtbf?: number;
-  mttr?: number;
+  acquisitionDate: string;
+  estimatedLife: number;
+  cost: number;
+  serialNumber: string;
+  status: string;
   lastMaintenance?: string;
   nextMaintenance?: string;
   createdAt: string;
@@ -35,23 +34,22 @@ export interface Asset {
 
 export interface MaintenanceRecord {
   id: string;
+  assetId: string;
   asset: {
     id: string;
     name: string;
   };
-  title: string;
+  type: string;
   description: string;
-  type: 'preventive' | 'corrective' | 'predictive' | 'condition_based';
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'delayed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  scheduledDate: string;
-  completionDate?: string;
-  cost?: number;
-  technician?: string;
-  notes?: string;
-  partsReplaced?: string;
-  rootCause?: string;
+  cost: number;
+  date: string;
+  status: string;
+  responsible: string;
+  deadline: string;
+  materials: string;
+  failureDetails?: string;
   solution?: string;
+  attachments?: string;
   createdAt: string;
   updatedAt: string;
 }
