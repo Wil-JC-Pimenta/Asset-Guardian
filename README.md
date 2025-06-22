@@ -1,286 +1,233 @@
-# Asset Guardian CRM
+# Asset Guardian - CRM para Gestão de Manutenção
 
-Sistema de Gestão de Manutenção de Ativos Industriais
+**Asset Guardian** é um sistema completo de CRM (Customer Relationship Management) focado na gestão de manutenção de ativos. Ele permite o controle detalhado de equipamentos, agendamento de manutenções, análise de falhas (FMEA), e o monitoramento de indicadores chave de performance (KPIs) como MTBF, MTTR e OEE.
 
-## 📋 Documentação
+O projeto é estruturado como um monorepo, contendo um backend em Node.js com Express e Prisma, e um frontend moderno em React com Vite e Material-UI.
 
-### 📊 MER (Modelo Entidade-Relacionamento)
+## Sumário
+
+- [Arquitetura](#arquitetura)
+- [Diagrama de Entidade e Relacionamento (MER)](#diagrama-de-entidade-e-relacionamento-mer)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+  - [Backend](#backend)
+  - [Frontend](#frontend)
+  - [Banco de Dados](#banco-de-dados)
+- [Como Rodar o Projeto](#como-rodar-o-projeto)
+  - [Com Docker (Recomendado)](#com-docker-recomendado)
+  - [Localmente](#localmente)
+- [Estrutura de Diretórios](#estrutura-de-diretórios)
+- [Futuras Melhorias](#futuras-melhorias)
+
+## Arquitetura
+
+O sistema adota uma arquitetura de microsserviços desacoplados, orquestrados com Docker Compose para facilitar o desenvolvimento e a implantação.
+
+```mermaid
+graph TD;
+    subgraph "User's Browser"
+        A[React Frontend] -->|HTTP Requests| B(Backend API);
+    end
+
+    subgraph "Server Infrastructure (Docker)"
+        B -->|CRUD Operations| C(PostgreSQL Database);
+        B -->|ORM| D(Prisma);
+    end
+
+    A -- "Serve componentes de UI" --> User;
+    B[Express.js Server] -- "Processa a lógica de negócio" --> D;
+    C -- "Persiste os dados" --> V(Volume pgdata);
+
+    style A fill:#61DAFB,stroke:#fff,stroke-width:2px;
+    style B fill:#339933,stroke:#fff,stroke-width:2px;
+    style C fill:#336791,stroke:#fff,stroke-width:2px;
+    style D fill:#2D3748,stroke:#fff,stroke-width:2px;
+```
+
+-   **Frontend**: Uma Single Page Application (SPA) construída com React e Vite, responsável pela interface do usuário.
+-   **Backend**: Uma API RESTful desenvolvida com Node.js e Express, que gerencia toda a lógica de negócio e a comunicação com o banco de dados.
+-   **Banco de Dados**: Um banco de dados PostgreSQL, que armazena todas as informações da aplicação.
+-   **Prisma**: ORM utilizado no backend para abstrair e simplificar as operações com o banco de dados.
+
+## Diagrama de Entidade e Relacionamento (MER)
+
+O diagrama abaixo ilustra a estrutura do banco de dados e as relações entre as principais entidades do sistema.
 
 ```mermaid
 erDiagram
-    ASSET ||--o{ MAINTENANCE : has
-    ASSET {
-        uuid id PK
-        string name
-        string type
-        enum status
-        string location
-        date purchaseDate
-        decimal purchasePrice
-        string description
-        string tag
-        enum criticality
-        decimal mtbf
-        decimal mttr
-        date lastMaintenance
-        date nextMaintenance
-        timestamp createdAt
-        timestamp updatedAt
+    Asset {
+        String id PK
+        String code UK
+        String name
+        String manufacturer
+        String model
+        AssetType type
+        String location
+        DateTime acquisitionDate
+        Int estimatedLife
+        Float cost
+        String serialNumber UK
+        AssetStatus status
+        DateTime lastMaintenance
+        DateTime nextMaintenance
+        Float mtbf
+        Float mttr
+        Float oee
+        String description
     }
-    MAINTENANCE {
-        uuid id PK
-        uuid asset_id FK
-        string title
-        text description
-        enum type
-        enum status
-        enum priority
-        date scheduledDate
-        date completionDate
-        decimal cost
-        string technician
-        text notes
-        text partsReplaced
-        text rootCause
-        text solution
-        timestamp createdAt
-        timestamp updatedAt
+
+    MaintenanceRecord {
+        String id PK
+        String assetId FK
+        MaintenanceType type
+        String description
+        Float cost
+        DateTime date
+        MaintenanceStatus status
+        String responsible
+        String technicianId FK
+        Int duration
     }
+
+    Technician {
+        String id PK
+        String name
+        String email UK
+        TechnicianSpecialty specialty
+        TechnicianStatus status
+    }
+
+    FMEARecord {
+        String id PK
+        String assetId FK
+        String failureMode
+        String failureEffects
+        Int severity
+        Int occurrence
+        Int detection
+        Int rpn
+    }
+
+    Report {
+        String id PK
+        String assetId FK
+        ReportType type
+        String content
+        ReportStatus status
+    }
+
+    Asset ||--o{ MaintenanceRecord : "possui"
+    Asset ||--o{ FMEARecord : "possui"
+    Asset ||--o{ Report : "gera"
+    Technician ||--o{ MaintenanceRecord : "é atribuído a"
 ```
 
-### 🏗️ Arquitetura
+## Tecnologias Utilizadas
 
-O projeto segue uma arquitetura em camadas com os seguintes padrões:
+### Backend
 
-1. **Clean Architecture**
-   - Entities (Core)
-   - Use Cases (Application)
-   - Interface Adapters (Infrastructure)
-   - Frameworks & Drivers (External)
+-   **Linguagem**: TypeScript
+-   **Framework**: Node.js com Express.js
+-   **ORM**: Prisma
+-   **Banco de Dados**: PostgreSQL
+-   **Testes**: Jest (a ser implementado)
 
-2. **Repository Pattern**
-   - Abstração da camada de dados
-   - Implementação específica para PostgreSQL
+### Frontend
 
-3. **Service Layer Pattern**
-   - Lógica de negócios isolada
-   - Injeção de dependências
+-   **Linguagem**: TypeScript
+-   **Framework**: React (com Vite)
+-   **UI Library**: Material-UI (MUI)
+-   **Roteamento**: React Router DOM
+-   **Gráficos**: Recharts
+-   **Requisições HTTP**: Axios
 
-4. **Factory Pattern**
-   - Criação de objetos complexos
-   - Encapsulamento da lógica de criação
+### Banco de Dados
 
-### 🔄 Fluxo de Dados
+-   **Sistema**: PostgreSQL 15
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Controller
-    participant Service
-    participant Repository
-    participant Database
+## Como Rodar o Projeto
 
-    Client->>Controller: HTTP Request
-    Controller->>Service: Process Request
-    Service->>Repository: Data Operation
-    Repository->>Database: Query
-    Database-->>Repository: Result
-    Repository-->>Service: Data
-    Service-->>Controller: Response
-    Controller-->>Client: HTTP Response
-```
+### Com Docker (Recomendado)
 
-### 📡 Endpoints da API
+A forma mais simples de executar o projeto é utilizando Docker e Docker Compose.
 
-#### Assets
+1.  **Clone o repositório:**
+    ```bash
+    git clone <URL_DO_REPOSITORIO>
+    cd CRM-Gestao-da-Manutencao
+    ```
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | /api/assets | Lista todos os ativos |
-| GET | /api/assets/:id | Obtém um ativo específico |
-| POST | /api/assets | Cria um novo ativo |
-| PUT | /api/assets/:id | Atualiza um ativo |
-| DELETE | /api/assets/:id | Remove um ativo |
+2.  **Suba os contêineres:**
+    ```bash
+    docker-compose up --build
+    ```
 
-#### Maintenance
+3.  **Acesse as aplicações:**
+    -   Frontend: [http://localhost:3000](http://localhost:3000)
+    -   Backend API: [http://localhost:4000](http://localhost:4000)
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | /api/maintenance | Lista todas as manutenções |
-| GET | /api/maintenance/:id | Obtém uma manutenção específica |
-| POST | /api/maintenance | Cria uma nova manutenção |
-| PUT | /api/maintenance/:id | Atualiza uma manutenção |
-| DELETE | /api/maintenance/:id | Remove uma manutenção |
+4.  **Para popular o banco de dados com dados iniciais (seeding):**
+    ```bash
+    docker-compose exec backend npm run seed
+    ```
 
-### 🛠️ Tecnologias Utilizadas
+### Localmente
 
-#### Backend
-- Node.js
-- TypeScript
-- Express
-- TypeORM
-- PostgreSQL
-- Jest (Testes)
-- Docker
+Para executar o projeto sem Docker, você precisará ter o Node.js e o PostgreSQL instalados em sua máquina.
 
-#### Frontend
-- React
-- TypeScript
-- Material-UI
-- Vite
-- Tailwind CSS
-- React Query
-- Jest + React Testing Library
+1.  **Clone o repositório:**
+    ```bash
+    git clone <URL_DO_REPOSITORIO>
+    cd CRM-Gestao-da-Manutencao
+    ```
 
-### 📦 Estrutura do Projeto
+2.  **Setup do Backend:**
+    ```bash
+    cd backend
+    npm install
+    # Crie um arquivo .env com base no .env.example e configure a DATABASE_URL
+    npx prisma migrate dev
+    npx prisma db seed
+    npm run dev
+    ```
+
+3.  **Setup do Frontend (em outro terminal):**
+    ```bash
+    cd frontend
+    npm install
+    # Crie um arquivo .env e configure a variável VITE_API_URL=http://localhost:4000
+    npm run dev
+    ```
+
+## Estrutura de Diretórios
 
 ```
+CRM-Gestao-da-Manutencao/
 ├── backend/
-│   ├── src/
-│   │   ├── core/           # Entidades e regras de negócio
-│   │   ├── application/    # Casos de uso
-│   │   ├── infrastructure/ # Implementações concretas
-│   │   └── interfaces/     # Controllers e rotas
-│   ├── tests/             # Testes unitários e de integração
-│   └── migrations/        # Migrações do banco de dados
-│
-└── frontend/
-    ├── src/
-    │   ├── components/    # Componentes React
-    │   ├── hooks/        # Custom hooks
-    │   ├── services/     # Serviços de API
-    │   ├── store/        # Gerenciamento de estado
-    │   └── utils/        # Funções utilitárias
-    └── tests/            # Testes unitários
+│   ├── prisma/         # Schema e migrações do banco de dados
+│   └── src/
+│       ├── controllers/  # Controladores da API
+│       ├── routes/       # Definição das rotas
+│       ├── services/     # Lógica de negócio
+│       └── ...
+├── frontend/
+│   └── src/
+│       ├── components/   # Componentes React reutilizáveis
+│       ├── hooks/        # Hooks customizados
+│       ├── pages/        # Páginas da aplicação
+│       ├── services/     # Serviços de API
+│       └── ...
+└── docker-compose.yml    # Orquestração dos contêineres
 ```
 
-### 🚀 Como Executar
+## Futuras Melhorias
 
-1. Clone o repositório
-2. Configure as variáveis de ambiente
-3. Execute as migrações do banco de dados
-4. Inicie o backend e frontend
+O projeto está em desenvolvimento contínuo. Algumas das funcionalidades e melhorias planejadas para o futuro incluem:
 
-```bash
-# Backend
-cd backend
-npm install
-npm run migration:run
-npm run dev
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-### 🧪 Testes
-
-```bash
-# Backend
-npm run test
-
-# Frontend
-npm run test
-```
-
-### 📝 Convenções de Código
-
-- ESLint para linting
-- Prettier para formatação
-- Conventional Commits
-- Git Flow
-
-### 🔒 Segurança
-
-- Autenticação JWT
-- Validação de dados
-- Sanitização de inputs
-- Rate limiting
-- CORS configurado
-
-### 📈 Monitoramento
-
-- Logs estruturados
-- Métricas de performance
-- Rastreamento de erros
-- Health checks
-
-### 🔄 CI/CD
-
-- GitHub Actions
-- Testes automatizados
-- Deploy automático
-- Versionamento semântico
-
-## Project info
-
-**URL**: https://lovable.dev/projects/a394ddc1-d6fc-439b-ad53-08847a1ff2d2
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/a394ddc1-d6fc-439b-ad53-08847a1ff2d2) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/a394ddc1-d6fc-439b-ad53-08847a1ff2d2) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+-   **Autenticação e Autorização**: Implementar um sistema de login com diferentes níveis de permissão (e.g., administrador, técnico, gestor).
+-   **Testes Unitários e de Integração**: Aumentar a cobertura de testes no backend e frontend para garantir a estabilidade e a qualidade do código.
+-   **CI/CD Pipeline**: Configurar um pipeline de integração e entrega contínua (e.g., com GitHub Actions) para automatizar o build, teste e deploy.
+-   **Cálculos de KPI Avançados**: Permitir que os usuários configurem os parâmetros para o cálculo de OEE (performance, qualidade) em vez de usar valores fixos.
+-   **Notificações em Tempo Real**: Enviar notificações sobre manutenções agendadas, atrasadas ou concluídas (e.g., via WebSockets ou e-mail).
+-   **Gestão de Estoque de Materiais**: Melhorar o módulo de materiais para incluir controle de estoque mínimo e alertas de reposição.
+-   **Internacionalização (i18n)**: Adicionar suporte para múltiplos idiomas na interface.
+-   **Documentação da API**: Gerar documentação interativa para a API (e.g., com Swagger/OpenAPI).
