@@ -12,7 +12,8 @@ import {
   InputLabel,
   Select,
   CircularProgress,
-  Alert
+  Alert,
+  SelectChangeEvent
 } from '@mui/material';
 import { api, Asset } from '../services/api';
 
@@ -106,7 +107,8 @@ const MaintenanceForm: React.FC = () => {
       if (id) {
         await api.updateMaintenanceRecord(id, formData);
       } else {
-        await api.createMaintenanceRecord(formData);
+        const { createdAt, updatedAt, ...createData } = formData as any;
+        await api.createMaintenanceRecord(createData);
       }
       navigate('/maintenance');
     } catch (err) {
@@ -117,11 +119,19 @@ const MaintenanceForm: React.FC = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name as string]: name === 'cost' ? Number(value) : value
+      [name]: name === 'cost' ? Number(value) : value
+    }));
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name as string]: value
     }));
   };
 
@@ -154,7 +164,7 @@ const MaintenanceForm: React.FC = () => {
                 <Select
                   name="assetId"
                   value={formData.assetId}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Ativo"
                 >
                   {assets.map((asset) => (
@@ -172,7 +182,7 @@ const MaintenanceForm: React.FC = () => {
                 <Select
                   name="type"
                   value={formData.type}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Tipo"
                 >
                   {maintenanceTypes.map((type) => (
@@ -190,7 +200,7 @@ const MaintenanceForm: React.FC = () => {
                 <Select
                   name="status"
                   value={formData.status}
-                  onChange={handleChange}
+                  onChange={handleSelectChange}
                   label="Status"
                 >
                   {maintenanceStatus.map((status) => (
@@ -210,7 +220,7 @@ const MaintenanceForm: React.FC = () => {
                 name="date"
                 label="Data"
                 value={formData.date}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -223,7 +233,7 @@ const MaintenanceForm: React.FC = () => {
                 name="deadline"
                 label="Prazo"
                 value={formData.deadline}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -236,7 +246,7 @@ const MaintenanceForm: React.FC = () => {
                 name="cost"
                 label="Custo"
                 value={formData.cost}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 InputProps={{
                   startAdornment: 'R$'
                 }}
@@ -250,7 +260,7 @@ const MaintenanceForm: React.FC = () => {
                 name="responsible"
                 label="Responsável"
                 value={formData.responsible}
-                onChange={handleChange}
+                onChange={handleInputChange}
               />
             </Grid>
 
@@ -263,7 +273,7 @@ const MaintenanceForm: React.FC = () => {
                 name="description"
                 label="Descrição"
                 value={formData.description}
-                onChange={handleChange}
+                onChange={handleInputChange}
               />
             </Grid>
 
@@ -275,7 +285,7 @@ const MaintenanceForm: React.FC = () => {
                 name="materials"
                 label="Materiais"
                 value={formData.materials}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 helperText="Liste os materiais necessários, separados por vírgula"
               />
             </Grid>
@@ -290,7 +300,7 @@ const MaintenanceForm: React.FC = () => {
                     name="failureDetails"
                     label="Detalhes da Falha"
                     value={formData.failureDetails}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                   />
                 </Grid>
 
@@ -302,7 +312,7 @@ const MaintenanceForm: React.FC = () => {
                     name="solution"
                     label="Solução Aplicada"
                     value={formData.solution}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                   />
                 </Grid>
               </>

@@ -1,70 +1,67 @@
 import { prisma } from '../config/database';
+import { MaintenanceType, MaintenanceStatus } from '@prisma/client';
 
 const maintenances = [
   {
-    type: 'preventiva',
+    assetCode: 'EQP001',
+    type: MaintenanceType.PREVENTIVE,
     description: 'Manutenção preventiva trimestral da tesoura guilhotina principal',
     cost: 2500.00,
     date: new Date('2024-05-15'),
-    status: 'concluida',
+    status: MaintenanceStatus.COMPLETED,
     responsible: 'João Silva',
     deadline: new Date('2024-05-15'),
-    materials: JSON.stringify(['Óleo hidráulico', 'Filtros']),
+    materials: ['Óleo hidráulico', 'Filtros'],
     failureDetails: 'Manutenção programada',
     solution: 'Manutenção preventiva realizada com sucesso',
-    attachments: JSON.stringify(['relatorio_manutencao.pdf'])
+    attachments: ['relatorio_manutencao.pdf']
   },
   {
-    type: 'corretiva',
+    assetCode: 'EQP002',
+    type: MaintenanceType.CORRECTIVE,
     description: 'Correção de vazamento no sistema hidráulico do laminador',
     cost: 5000.00,
-    date: new Date('2024-06-08'),
-    status: 'em_andamento',
+    date: new Date('2024-06-01'),
+    status: MaintenanceStatus.COMPLETED,
     responsible: 'Maria Santos',
-    deadline: new Date('2024-06-10'),
-    materials: JSON.stringify(['Juntas', 'Selos hidráulicos']),
-    failureDetails: 'Identificado vazamento no cilindro principal',
-    solution: 'Em andamento',
-    attachments: JSON.stringify(['foto_vazamento.jpg'])
+    deadline: new Date('2024-06-02'),
+    materials: ['Termovisor'],
+    failureDetails: 'Vazamento detectado durante inspeção',
+    solution: 'Troca de vedação e reaperto das conexões',
+    attachments: ['foto_vazamento.jpg']
   },
   {
-    type: 'preditiva',
-    description: 'Inspeção térmica e calibração do forno de recozimento',
+    assetCode: 'EQP003',
+    type: MaintenanceType.PREVENTIVE,
+    description: 'Lubrificação geral do sistema de transporte',
     cost: 1500.00,
-    date: new Date('2024-06-12'),
-    status: 'agendada',
-    responsible: 'Carlos Oliveira',
-    deadline: new Date('2024-06-12'),
-    materials: JSON.stringify(['Termovisor']),
-    failureDetails: 'Agendada inspeção com termovisor',
-    solution: 'Pendente',
-    attachments: JSON.stringify([])
+    date: new Date('2024-06-10'),
+    status: MaintenanceStatus.SCHEDULED,
+    responsible: 'Carlos Souza',
+    deadline: new Date('2024-06-15'),
+    materials: ['Graxa', 'Pano'],
+    failureDetails: 'Manutenção preventiva programada',
+    solution: '',
+    attachments: []
   }
 ];
 
-export const seedMaintenances = async () => {
-  try {
-    console.log('🌱 Seeding maintenances...');
-    
-    // Get the first asset to associate with maintenances
-    const asset = await prisma.asset.findFirst();
-    
+export async function seedMaintenances() {
+  console.log('🌱 Seeding maintenances...');
+  for (const maintenance of maintenances) {
+    const asset = await prisma.asset.findUnique({ where: { code: maintenance.assetCode } });
     if (!asset) {
-      throw new Error('No assets found to associate with maintenances');
+      throw new Error(`Asset with code ${maintenance.assetCode} not found`);
     }
-
-    for (const maintenance of maintenances) {
-      await prisma.maintenanceRecord.create({
-        data: {
-          ...maintenance,
-          assetId: asset.id
-        }
-      });
-    }
-    
-    console.log('✅ Maintenances seeded successfully');
-  } catch (error) {
-    console.error('❌ Error seeding maintenances:', error);
-    throw error;
+    const { assetCode, ...maintenanceData } = maintenance;
+    await prisma.maintenanceRecord.create({
+      data: {
+        ...maintenanceData,
+        assetId: asset.id,
+        materials: maintenanceData.materials as any,
+        attachments: maintenanceData.attachments as string[]
+      }
+    });
   }
-}; 
+  console.log('✅ Maintenances seeded successfully');
+} 

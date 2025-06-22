@@ -28,6 +28,17 @@ export interface Asset {
   status: string;
   lastMaintenance?: string;
   nextMaintenance?: string;
+  description?: string;
+  specifications?: any | null;
+  documents?: string[];
+  images?: string[];
+  maintenance?: any[];
+  mtbf?: number;
+  mttr?: number;
+  oee?: number;
+  availability?: number;
+  performance?: number;
+  quality?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,10 +57,10 @@ export interface MaintenanceRecord {
   status: string;
   responsible: string;
   deadline: string;
-  materials: string;
+  materials: string[];
   failureDetails?: string;
   solution?: string;
-  attachments?: string;
+  attachments?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -58,18 +69,22 @@ export interface FMEARecord {
   id: string;
   assetId: string;
   failureMode: string;
-  effect: string;
-  cause: string;
+  potentialEffect: string;
   severity: number;
   occurrence: number;
   detection: number;
   rpn: number;
-  action: string;
+  recommendedAction: string;
+  responsible: string;
   status: string;
+  effectiveness?: string;
+  implementationDate?: string;
   asset: {
     id: string;
     name: string;
   };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -106,7 +121,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
   const id = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const response = await fetch(url, {
       ...options,
       signal: controller.signal,
       headers: {
@@ -278,6 +293,56 @@ export const api = {
 
   deleteFMEARecord: async (id: string): Promise<void> => {
     const response = await fetchWithTimeout(`${API_BASE_URL}/fmea/${id}`, {
+      method: 'DELETE'
+    });
+    await handleResponse(response);
+  },
+
+  // Report endpoints
+  getReports: async (params?: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    assetId?: string;
+    type?: string;
+    status?: string;
+  }): Promise<any[]> => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports?${queryParams}`);
+    return handleResponse<any[]>(response);
+  },
+
+  getReportById: async (id: string): Promise<any> => {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports/${id}`);
+    return handleResponse<any>(response);
+  },
+
+  createReport: async (report: any): Promise<any> => {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports`, {
+      method: 'POST',
+      body: JSON.stringify(report)
+    });
+    return handleResponse<any>(response);
+  },
+
+  updateReport: async (id: string, report: any): Promise<any> => {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(report)
+    });
+    return handleResponse<any>(response);
+  },
+
+  deleteReport: async (id: string): Promise<void> => {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports/${id}`, {
       method: 'DELETE'
     });
     await handleResponse(response);

@@ -71,8 +71,8 @@ const Dashboard: React.FC = () => {
 
       const dashboardData: DashboardData = {
         totalAssets: assets.length,
-        operationalAssets: assets.filter((a) => a.status === 'ativo').length,
-        maintenanceAssets: assets.filter((a) => a.status === 'em_manutencao').length,
+        operationalAssets: assets.filter((a) => a.status === 'ACTIVE').length,
+        maintenanceAssets: assets.filter((a) => a.status === 'MAINTENANCE').length,
         totalMaintenanceCost: maintenanceRecords.reduce((sum, record) => sum + (record.cost || 0), 0),
         upcomingMaintenance: maintenanceRecords
           .filter((record) => new Date(record.deadline) > new Date())

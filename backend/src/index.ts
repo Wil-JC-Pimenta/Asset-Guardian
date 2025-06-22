@@ -4,8 +4,11 @@ import { PrismaClient } from '@prisma/client';
 import assetRoutes from './routes/asset.routes';
 import maintenanceRoutes from './routes/maintenance.routes';
 import fmeaRoutes from './routes/fmea.routes';
+import reportRoutes from './routes/report.routes';
 import { seedAssets } from './seeders/asset.seeder';
 import { seedMaintenances } from './seeders/maintenance.seeder';
+import { seedFMEA } from './seeders/fmea.seeder';
+import { seedReports } from './seeders/report.seeder';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -29,6 +32,7 @@ const checkDatabaseConnection = async () => {
 app.use('/api/assets', assetRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/fmea', fmeaRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -56,6 +60,8 @@ const startServer = async () => {
     // Run seeders
     await seedAssets();
     await seedMaintenances();
+    await seedFMEA();
+    await seedReports();
     
     app.listen(PORT, () => {
       console.log(`✅ Database connected successfully`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -29,68 +29,47 @@ import {
   Search as SearchIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { api, MaintenanceRecord } from '../services/api';
+import { useMaintenance } from '../hooks/useMaintenance';
 
 const maintenanceTypes = {
-  'preventive': 'Preventiva',
-  'corrective': 'Corretiva',
-  'predictive': 'Preditiva',
-  'emergency': 'Emergencial'
+  'PREVENTIVE': 'Preventiva',
+  'CORRECTIVE': 'Corretiva',
+  'PREDICTIVE': 'Preditiva',
+  'EMERGENCY': 'Emergencial'
 };
 
 const maintenanceStatus = {
-  'scheduled': 'Agendada',
-  'in_progress': 'Em Andamento',
-  'completed': 'Concluída',
-  'cancelled': 'Cancelada'
+  'SCHEDULED': 'Agendada',
+  'IN_PROGRESS': 'Em Andamento',
+  'COMPLETED': 'Concluída',
+  'CANCELLED': 'Cancelada'
 };
 
 const statusColors = {
-  'scheduled': 'info',
-  'in_progress': 'warning',
-  'completed': 'success',
-  'cancelled': 'error'
+  'SCHEDULED': 'info',
+  'IN_PROGRESS': 'warning',
+  'COMPLETED': 'success',
+  'CANCELLED': 'error'
 } as const;
 
 const MaintenanceList: React.FC = () => {
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { records, loading, error, deleteRecord } = useMaintenance();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchMaintenanceRecords();
-  }, []);
-
-  const fetchMaintenanceRecords = async () => {
-    try {
-      setLoading(true);
-      const response = await api.getMaintenanceRecords();
-      setMaintenanceRecords(response.data);
-    } catch (err) {
-      setError('Erro ao carregar registros de manutenção');
-      console.error('Error fetching maintenance records:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este registro de manutenção?')) {
       try {
-        await api.deleteMaintenanceRecord(id);
-        fetchMaintenanceRecords();
+        await deleteRecord(id);
       } catch (err) {
-        setError('Erro ao excluir registro de manutenção');
         console.error('Error deleting maintenance record:', err);
       }
     }
   };
 
-  const filteredRecords = maintenanceRecords.filter(record => {
+  const filteredRecords = records.filter(record => {
     const matchesSearch = record.asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !typeFilter || record.type === typeFilter;
@@ -207,9 +186,7 @@ const MaintenanceList: React.FC = () => {
                 </TableCell>
                 <TableCell>{record.description}</TableCell>
                 <TableCell>{record.responsible}</TableCell>
-                <TableCell>
-                  R$ {record.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </TableCell>
+                <TableCell>R$ {record.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                 <TableCell align="right">
                   <IconButton
                     color="primary"
@@ -226,13 +203,6 @@ const MaintenanceList: React.FC = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {filteredRecords.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  Nenhum registro de manutenção encontrado
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
       </TableContainer>

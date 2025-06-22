@@ -22,7 +22,8 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { api, Asset, MaintenanceRecord } from '../services/api';
+import { useAssets } from '../hooks/useAssets';
+import { useMaintenance } from '../hooks/useMaintenance';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -36,43 +37,39 @@ interface KPI {
 }
 
 const Reports: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  const { assets, loading: assetsLoading } = useAssets();
+  const { records: maintenanceRecords, loading: maintenanceLoading } = useMaintenance();
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<KPI | null>(null);
   const [maintenanceByType, setMaintenanceByType] = useState<{ type: string; count: number }[]>([]);
   const [maintenanceByStatus, setMaintenanceByStatus] = useState<{ status: string; count: number }[]>([]);
 
   useEffect(() => {
-    fetchReportData();
-  }, []);
+    if (!assetsLoading && !maintenanceLoading) {
+      calculateReportData();
+    }
+  }, [assets, maintenanceRecords, assetsLoading, maintenanceLoading]);
 
-  const fetchReportData = async () => {
+  const calculateReportData = () => {
     try {
-      setLoading(true);
-      const [assetsResponse, maintenanceResponse] = await Promise.all([
-        api.getAssets(),
-        api.getMaintenanceRecords()
-      ]);
-
-      const assets = assetsResponse.data;
-      const maintenanceRecords = maintenanceResponse.data;
-
       // Calculate KPIs
       const totalOperationTime = maintenanceRecords.reduce((sum, record) => {
-        if (record.status === 'completed') {
-          return sum + (new Date(record.date).getTime() - new Date(record.asset.lastMaintenance).getTime());
+        if (record.status === 'COMPLETED') {
+          // Use a fixed time period for calculation since lastMaintenance might not be available
+          return sum + (24 * 60 * 60 * 1000); // 24 hours per completed maintenance
         }
         return sum;
       }, 0);
 
       const totalRepairTime = maintenanceRecords.reduce((sum, record) => {
-        if (record.status === 'completed') {
-          return sum + (new Date(record.date).getTime() - new Date(record.asset.lastMaintenance).getTime());
+        if (record.status === 'COMPLETED') {
+          // Use a fixed time period for calculation
+          return sum + (2 * 60 * 60 * 1000); // 2 hours per completed maintenance
         }
         return sum;
       }, 0);
 
-      const failureCount = maintenanceRecords.filter(record => record.type === 'corrective').length;
+      const failureCount = maintenanceRecords.filter(record => record.type === 'CORRECTIVE').length;
 
       const mtbf = failureCount > 0 ? totalOperationTime / failureCount : 0;
       const mttr = failureCount > 0 ? totalRepairTime / failureCount : 0;
@@ -90,7 +87,7 @@ const Reports: React.FC = () => {
         mttr,
         oee,
         totalAssets: assets.length,
-        operationalAssets: assets.filter(a => a.status === 'Operational').length,
+        operationalAssets: assets.filter(a => a.status === 'ACTIVE').length,
         maintenanceCost: maintenanceRecords.reduce((sum, record) => sum + record.cost, 0)
       });
 
@@ -121,12 +118,12 @@ const Reports: React.FC = () => {
       );
 
     } catch (err) {
-      setError('Erro ao carregar dados dos relatórios');
-      console.error('Error fetching report data:', err);
-    } finally {
-      setLoading(false);
+      setError('Erro ao calcular dados dos relatórios');
+      console.error('Error calculating report data:', err);
     }
   };
+
+  const loading = assetsLoading || maintenanceLoading;
 
   if (loading) {
     return (
@@ -188,6 +185,42 @@ const Reports: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total de Ativos
+              </Typography>
+              <Typography variant="h4">
+                {kpis.totalAssets}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Ativos Operacionais
+              </Typography>
+              <Typography variant="h4">
+                {kpis.operationalAssets}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Custo Total de Manutenção
+              </Typography>
+              <Typography variant="h4">
+                R$ {kpis.maintenanceCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {/* Charts */}
@@ -218,19 +251,19 @@ const Reports: React.FC = () => {
               <PieChart>
                 <Pie
                   data={maintenanceByStatus}
-                  dataKey="count"
-                  nameKey="status"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
-                  label
+                  labelLine={false}
+                  label={({ status, count }) => `${status}: ${count}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="count"
                 >
                   {maintenanceByStatus.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </Paper>

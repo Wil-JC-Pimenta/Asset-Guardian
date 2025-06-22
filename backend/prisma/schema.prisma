@@ -7,44 +7,147 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AssetType {
+  MACHINE
+  EQUIPMENT
+  VEHICLE
+  TOOL
+  INSTRUMENT
+  SYSTEM
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  RETIRED
+  OUT_OF_SERVICE
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  PREDICTIVE
+  EMERGENCY
+  INSPECTION
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum TechnicianStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  VACATION
+}
+
+enum TechnicianSpecialty {
+  MECHANICAL
+  ELECTRICAL
+  HYDRAULIC
+  PNEUMATIC
+  ELECTRONIC
+  INSTRUMENTATION
+  AUTOMATION
+}
+
+enum ReportType {
+  MAINTENANCE
+  INSPECTION
+  FAILURE
+  PERFORMANCE
+  ANALYTICAL
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  PENDING_REVIEW
+}
+
 model Asset {
   id              String              @id @default(uuid())
   code            String              @unique
   name            String
   manufacturer    String
   model           String
-  type            String
+  type            AssetType
   location        String
   acquisitionDate DateTime
-  estimatedLife   Int
+  estimatedLife   Int                 // em meses
   cost            Float
   serialNumber    String              @unique
-  status          String
+  status          AssetStatus         @default(ACTIVE)
   lastMaintenance DateTime?
   nextMaintenance DateTime?
+  
+  // Métricas de performance
+  mtbf            Float?              // Mean Time Between Failures (horas)
+  mttr            Float?              // Mean Time To Repair (horas)
+  oee             Float?              // Overall Equipment Effectiveness (%)
+  availability    Float?              // Disponibilidade (%)
+  performance     Float?              // Performance (%)
+  quality         Float?              // Qualidade (%)
+  
+  // Metadados
+  description     String?
+  specifications  Json?               // Especificações técnicas em JSON
+  documents       String[]            // URLs dos documentos
+  images          String[]            // URLs das imagens
+  
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+  
+  // Relacionamentos
   fmeaRecords     FMEARecord[]
   maintenance     MaintenanceRecord[]
+  reports         Report[]
+  
+  @@index([type])
+  @@index([status])
+  @@index([location])
+  @@index([manufacturer])
+  @@map("assets")
 }
 
 model MaintenanceRecord {
-  id             String   @id @default(uuid())
+  id             String           @id @default(uuid())
   assetId        String
-  type           String
+  type           MaintenanceType
   description    String
   cost           Float
   date           DateTime
-  status         String
+  status         MaintenanceStatus @default(SCHEDULED)
   responsible    String
   deadline       DateTime
-  materials      String
+  materials      Json              // Array de materiais em JSON
   failureDetails String?
   solution       String?
-  attachments    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  asset          Asset    @relation(fields: [assetId], references: [id])
+  attachments    String[]          // URLs dos anexos
+  priority       Int               @default(3) // 1=Alta, 2=Média, 3=Baixa
+  duration       Int?              // Duração em horas
+  notes          String?
+  
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  // Relacionamentos
+  asset          Asset             @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  technician     Technician?       @relation(fields: [technicianId], references: [id])
+  technicianId   String?
+  
+  @@index([assetId])
+  @@index([type])
+  @@index([status])
+  @@index([date])
+  @@map("maintenance_records")
 }
 
 model Material {
@@ -58,36 +161,104 @@ model Material {
   cost        Float
   supplier    String?
   location    String?
+  category    String?
+  specifications Json?
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  @@index([code])
+  @@index([category])
+  @@map("materials")
 }
 
 model Technician {
-  id        String   @id @default(uuid())
+  id        String              @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String              @unique
   phone     String?
-  specialty String
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  specialty TechnicianSpecialty
+  status    TechnicianStatus    @default(ACTIVE)
+  experience Int?               // Anos de experiência
+  certifications String[]       // Certificações
+  notes     String?
+  
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  
+  // Relacionamentos
+  maintenanceRecords MaintenanceRecord[]
+  
+  @@index([specialty])
+  @@index([status])
+  @@map("technicians")
 }
 
 model FMEARecord {
-  id          String   @id @default(uuid())
-  assetId     String
-  failureMode String
-  effect      String
-  cause       String
-  severity    Int
-  occurrence  Int
-  detection   Int
-  rpn         Int
-  action      String?
-  status      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  asset       Asset    @relation(fields: [assetId], references: [id])
-
+  id                String   @id @default(uuid())
+  assetId           String
+  failureMode       String
+  potentialEffect   String
+  severity          Int      @db.SmallInt
+  occurrence        Int      @db.SmallInt
+  detection         Int      @db.SmallInt
+  rpn               Int      @db.SmallInt
+  recommendedAction String
+  responsible       String
+  status            String
+  implementationDate DateTime?
+  effectiveness     String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relacionamentos
+  asset             Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
   @@index([assetId])
+  @@index([rpn])
+  @@index([status])
+  @@map("fmea_records")
+}
+
+model Report {
+  id          String      @id @default(uuid())
+  assetId     String
+  type        ReportType
+  title       String
+  content     String
+  author      String
+  date        DateTime
+  attachments String[]    // URLs dos anexos
+  status      ReportStatus @default(DRAFT)
+  version     Int         @default(1)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relacionamentos
+  asset       Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  
+  @@index([assetId])
+  @@index([type])
+  @@index([status])
+  @@index([date])
+  @@map("reports")
+}
+
+// Tabela de auditoria para logs
+model AuditLog {
+  id        String   @id @default(uuid())
+  table     String
+  action    String   // CREATE, UPDATE, DELETE
+  recordId  String
+  oldValues Json?
+  newValues Json?
+  userId    String?
+  timestamp DateTime @default(now())
+  
+  @@index([table])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
 }

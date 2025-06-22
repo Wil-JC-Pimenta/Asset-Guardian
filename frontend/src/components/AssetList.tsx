@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Button,
@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { api, Asset } from '../services/api';
+import { useAssets } from '../hooks/useAssets';
 
 const formatDate = (date: string | undefined) => {
   if (!date) return '-';
@@ -24,35 +24,14 @@ const formatDate = (date: string | undefined) => {
 };
 
 const AssetList: React.FC = () => {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { assets, loading, error, deleteAsset } = useAssets();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchAssets();
-  }, []);
-
-  const fetchAssets = async () => {
-    try {
-      setLoading(true);
-      const response = await api.getAssets();
-      setAssets(response.data);
-    } catch (err) {
-      setError('Erro ao carregar ativos');
-      console.error('Error fetching assets:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este ativo?')) {
       try {
-        await api.deleteAsset(id);
-        fetchAssets();
+        await deleteAsset(id);
       } catch (err) {
-        setError('Erro ao excluir ativo');
         console.error('Error deleting asset:', err);
       }
     }

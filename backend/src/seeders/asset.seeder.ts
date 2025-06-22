@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { AssetType, AssetStatus } from '@prisma/client';
 
 const assets = [
   {
@@ -6,39 +7,39 @@ const assets = [
     name: 'Tesoura Guilhotina Principal',
     manufacturer: 'MetalMax',
     model: 'TG-2000',
-    type: 'equipamento',
+    type: AssetType.EQUIPMENT,
     location: 'Setor de Corte',
     acquisitionDate: new Date('2023-01-15'),
     estimatedLife: 120,
     cost: 150000.00,
     serialNumber: 'TG2023001',
-    status: 'ativo'
+    status: AssetStatus.ACTIVE
   },
   {
     code: 'EQP002',
     name: 'Laminador Contínuo',
     manufacturer: 'SteelTech',
     model: 'LC-5000',
-    type: 'equipamento',
+    type: AssetType.EQUIPMENT,
     location: 'Setor de Laminação',
     acquisitionDate: new Date('2023-03-20'),
     estimatedLife: 180,
     cost: 250000.00,
     serialNumber: 'LC2023001',
-    status: 'ativo'
+    status: AssetStatus.ACTIVE
   },
   {
     code: 'EQP003',
     name: 'Forno de Recozimento',
     manufacturer: 'HeatMaster',
     model: 'FR-3000',
-    type: 'equipamento',
+    type: AssetType.EQUIPMENT,
     location: 'Setor de Tratamento Térmico',
     acquisitionDate: new Date('2023-06-10'),
     estimatedLife: 144,
     cost: 180000.00,
     serialNumber: 'FR2023001',
-    status: 'ativo'
+    status: AssetStatus.ACTIVE
   }
 ];
 

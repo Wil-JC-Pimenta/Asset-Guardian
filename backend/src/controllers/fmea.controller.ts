@@ -63,7 +63,7 @@ export const getFMEARecordById = async (req: Request, res: Response) => {
 
 export const createFMEARecord = async (req: Request, res: Response) => {
   try {
-    const { assetId, failureMode, effect, cause, severity, occurrence, detection, action, status } = req.body;
+    const { assetId, failureMode, potentialEffect, severity, occurrence, detection, recommendedAction, responsible, status } = req.body;
     
     // Calculate RPN
     const rpn = severity * occurrence * detection;
@@ -72,13 +72,13 @@ export const createFMEARecord = async (req: Request, res: Response) => {
       data: {
         assetId,
         failureMode,
-        effect,
-        cause,
+        potentialEffect,
         severity,
         occurrence,
         detection,
         rpn,
-        action,
+        recommendedAction,
+        responsible,
         status,
       },
       include: {

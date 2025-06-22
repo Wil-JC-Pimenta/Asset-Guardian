@@ -22,24 +22,9 @@ import {
   Alert
 } from '@mui/material';
 import { Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
-import { api } from '../services/api';
-
-interface FMEARecord {
-  id: string;
-  assetId: string;
-  failureMode: string;
-  effect: string;
-  cause: string;
-  severity: number;
-  occurrence: number;
-  detection: number;
-  rpn: number;
-  action: string;
-  status: string;
-  asset: {
-    name: string;
-  };
-}
+import { useFMEA } from '../hooks/useFMEA';
+import { useAssets } from '../hooks/useAssets';
+import { FMEARecord } from '../services/api';
 
 const severityLevels = [
   { value: 1, label: '1 - Sem efeito' },
@@ -81,44 +66,21 @@ const detectionLevels = [
 ];
 
 const FMEA: React.FC = () => {
-  const [records, setRecords] = useState<FMEARecord[]>([]);
-  const [assets, setAssets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { records, loading, error, createRecord, updateRecord, deleteRecord } = useFMEA();
+  const { assets } = useAssets();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRecord, setEditingRecord] = useState<FMEARecord | null>(null);
   const [formData, setFormData] = useState<Partial<FMEARecord>>({
     assetId: '',
     failureMode: '',
-    effect: '',
-    cause: '',
+    potentialEffect: '',
     severity: 1,
     occurrence: 1,
     detection: 1,
-    action: '',
+    recommendedAction: '',
+    responsible: '',
     status: 'Pendente'
   });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [fmeaResponse, assetsResponse] = await Promise.all([
-        api.getFMEARecords(),
-        api.getAssets()
-      ]);
-      setRecords(fmeaResponse.data);
-      setAssets(assetsResponse.data);
-    } catch (err) {
-      setError('Erro ao carregar dados do FMEA');
-      console.error('Error fetching FMEA data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleOpenDialog = (record?: FMEARecord) => {
     if (record) {
@@ -129,12 +91,12 @@ const FMEA: React.FC = () => {
       setFormData({
         assetId: '',
         failureMode: '',
-        effect: '',
-        cause: '',
+        potentialEffect: '',
         severity: 1,
         occurrence: 1,
         detection: 1,
-        action: '',
+        recommendedAction: '',
+        responsible: '',
         status: 'Pendente'
       });
     }
@@ -149,33 +111,23 @@ const FMEA: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      setLoading(true);
       if (editingRecord) {
-        await api.updateFMEARecord(editingRecord.id, formData);
+        await updateRecord(editingRecord.id, formData);
       } else {
-        await api.createFMEARecord(formData as Omit<FMEARecord, 'id'>);
+        await createRecord(formData as Omit<FMEARecord, 'id' | 'asset'>);
       }
       handleCloseDialog();
-      fetchData();
     } catch (err) {
-      setError('Erro ao salvar registro FMEA');
       console.error('Error saving FMEA record:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este registro?')) {
       try {
-        setLoading(true);
-        await api.deleteFMEARecord(id);
-        fetchData();
+        await deleteRecord(id);
       } catch (err) {
-        setError('Erro ao excluir registro FMEA');
         console.error('Error deleting FMEA record:', err);
-      } finally {
-        setLoading(false);
       }
     }
   };
@@ -219,15 +171,13 @@ const FMEA: React.FC = () => {
             <TableRow>
               <TableCell>Ativo</TableCell>
               <TableCell>Modo de Falha</TableCell>
-              <TableCell>Efeito</TableCell>
-              <TableCell>Causa</TableCell>
+              <TableCell>Efeito Potencial</TableCell>
               <TableCell>Severidade</TableCell>
               <TableCell>Ocorrência</TableCell>
               <TableCell>Detecção</TableCell>
               <TableCell>RPN</TableCell>
-              <TableCell>Ação</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Ações</TableCell>
+              <TableCell align="right">Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -235,23 +185,21 @@ const FMEA: React.FC = () => {
               <TableRow key={record.id}>
                 <TableCell>{record.asset.name}</TableCell>
                 <TableCell>{record.failureMode}</TableCell>
-                <TableCell>{record.effect}</TableCell>
-                <TableCell>{record.cause}</TableCell>
+                <TableCell>{record.potentialEffect}</TableCell>
                 <TableCell>{record.severity}</TableCell>
                 <TableCell>{record.occurrence}</TableCell>
                 <TableCell>{record.detection}</TableCell>
                 <TableCell>{record.rpn}</TableCell>
-                <TableCell>{record.action}</TableCell>
                 <TableCell>{record.status}</TableCell>
-                <TableCell>
+                <TableCell align="right">
                   <IconButton
-                    size="small"
+                    color="primary"
                     onClick={() => handleOpenDialog(record)}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    size="small"
+                    color="error"
                     onClick={() => handleDelete(record.id)}
                   >
                     <DeleteIcon />
@@ -274,9 +222,8 @@ const FMEA: React.FC = () => {
                 select
                 fullWidth
                 label="Ativo"
-                value={formData.assetId}
+                value={formData.assetId || ''}
                 onChange={(e) => setFormData({ ...formData, assetId: e.target.value })}
-                required
               >
                 {assets.map((asset) => (
                   <MenuItem key={asset.id} value={asset.id}>
@@ -289,44 +236,27 @@ const FMEA: React.FC = () => {
               <TextField
                 fullWidth
                 label="Modo de Falha"
-                value={formData.failureMode}
+                value={formData.failureMode || ''}
                 onChange={(e) => setFormData({ ...formData, failureMode: e.target.value })}
-                required
               />
             </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Efeito"
-                value={formData.effect}
-                onChange={(e) => setFormData({ ...formData, effect: e.target.value })}
-                required
+                label="Efeito Potencial"
+                multiline
+                rows={3}
+                value={formData.potentialEffect || ''}
+                onChange={(e) => setFormData({ ...formData, potentialEffect: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Causa"
-                value={formData.cause}
-                onChange={(e) => setFormData({ ...formData, cause: e.target.value })}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={4}>
               <TextField
                 select
                 fullWidth
                 label="Severidade"
-                value={formData.severity}
-                onChange={(e) => {
-                  const severity = Number(e.target.value);
-                  setFormData({
-                    ...formData,
-                    severity,
-                    rpn: calculateRPN(severity, formData.occurrence || 1, formData.detection || 1)
-                  });
-                }}
-                required
+                value={formData.severity || 1}
+                onChange={(e) => setFormData({ ...formData, severity: parseInt(e.target.value) })}
               >
                 {severityLevels.map((level) => (
                   <MenuItem key={level.value} value={level.value}>
@@ -335,21 +265,13 @@ const FMEA: React.FC = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={4}>
               <TextField
                 select
                 fullWidth
                 label="Ocorrência"
-                value={formData.occurrence}
-                onChange={(e) => {
-                  const occurrence = Number(e.target.value);
-                  setFormData({
-                    ...formData,
-                    occurrence,
-                    rpn: calculateRPN(formData.severity || 1, occurrence, formData.detection || 1)
-                  });
-                }}
-                required
+                value={formData.occurrence || 1}
+                onChange={(e) => setFormData({ ...formData, occurrence: parseInt(e.target.value) })}
               >
                 {occurrenceLevels.map((level) => (
                   <MenuItem key={level.value} value={level.value}>
@@ -358,21 +280,13 @@ const FMEA: React.FC = () => {
                 ))}
               </TextField>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={4}>
               <TextField
                 select
                 fullWidth
                 label="Detecção"
-                value={formData.detection}
-                onChange={(e) => {
-                  const detection = Number(e.target.value);
-                  setFormData({
-                    ...formData,
-                    detection,
-                    rpn: calculateRPN(formData.severity || 1, formData.occurrence || 1, detection)
-                  });
-                }}
-                required
+                value={formData.detection || 1}
+                onChange={(e) => setFormData({ ...formData, detection: parseInt(e.target.value) })}
               >
                 {detectionLevels.map((level) => (
                   <MenuItem key={level.value} value={level.value}>
@@ -385,38 +299,41 @@ const FMEA: React.FC = () => {
               <TextField
                 fullWidth
                 label="Ação Recomendada"
-                value={formData.action}
-                onChange={(e) => setFormData({ ...formData, action: e.target.value })}
                 multiline
                 rows={3}
+                value={formData.recommendedAction || ''}
+                onChange={(e) => setFormData({ ...formData, recommendedAction: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid item xs={6}>
               <TextField
-                select
+                fullWidth
+                label="Responsável"
+                value={formData.responsible || ''}
+                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
                 fullWidth
                 label="Status"
-                value={formData.status}
+                value={formData.status || ''}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                required
-              >
-                <MenuItem value="Pendente">Pendente</MenuItem>
-                <MenuItem value="Em Andamento">Em Andamento</MenuItem>
-                <MenuItem value="Concluído">Concluído</MenuItem>
-                <MenuItem value="Cancelado">Cancelado</MenuItem>
-              </TextField>
+              />
             </Grid>
+            {formData.severity && formData.occurrence && formData.detection && (
+              <Grid item xs={12}>
+                <Typography variant="h6" color="primary">
+                  RPN: {calculateRPN(formData.severity, formData.occurrence, formData.detection)}
+                </Typography>
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            color="primary"
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Salvar'}
+          <Button onClick={handleSubmit} variant="contained">
+            Salvar
           </Button>
         </DialogActions>
       </Dialog>
